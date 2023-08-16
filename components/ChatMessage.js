@@ -1,16 +1,17 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 
-const ChatMessage = () => {
+const ChatMessage = ({ content, timestamp }) => {
+
   return (
     <View style={styles.container}>
       <View style={styles.chatBubble}>
         <Text style={styles.textMsg}>
-          This is a dummy text message i should have sent you. let me know if
-          you did receive it today!
+        {/* draw contemt & time stamp fom the chatcomposer */}
+          {content}
         </Text>
         <View style={styles.timeContainer}>
-        <Text style={styles.subText}>16:32</Text>
+        <Text style={styles.subText}>{timestamp}</Text>
       </View>
       </View>
       <View style={styles.iconContainer}>
@@ -41,8 +42,8 @@ const styles = StyleSheet.create({
     minHeight: "auto",
     maxWidth: "64%",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#ffd7d7",
+    paddingVertical: 8,
+    backgroundColor: "#ded7ff",
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
     borderBottomLeftRadius: 12,
@@ -64,12 +65,14 @@ const styles = StyleSheet.create({
     fontWeight: 100,
     letterSpacing: 0.5,
     top: 8,
-    left: 200,
-    alignSelf: "right"
+    // left: 200,
+    right: -100,
   },
   timeContainer: {
-    // alignSelf: "flex-end",
-    // right: 4,
+    right: 4,
+    // backgroundColor: "red",
+    alignItems: "center",
+    justifyContent: "center",
   },
   icon: {
     width: 30,
@@ -81,7 +84,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     // alignSelf: "right",
-    left: -24,
+    right: 24,
     bottom: -8,
   },
 });
