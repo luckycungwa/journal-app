@@ -7,14 +7,60 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+// expo audio from expo av
+import { Audio } from "expo-av";
 
 const ChatComposer = () => {
   const [messgae, setMessage] = useState();
+  // Recording Stuff
+  const [recording, setRecording] = useState();
+  const [isRecording, setIsRecording] = useState(false); //initial recording state is off
+  const [recordedAudioUri, setRecordedAudioUri] = useState(null);   //save audio state as file
+// sav  y recording in an array
+  const [savedAudios, setSavedAudios] = useState([])
+
 
   const handleInputChange = () => {
     // handle sending user input
     console.log("message sent!");
   };
+
+  // Handle rcording audio
+  const startRecording = async () => {
+    try {
+      console.log("Requesting permissions..");
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      console.log("Recording Started");
+      // prepare recording in bst quality | set audio quality (acc or mp3 etc) when if thees more time
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+      console.log("Is recording");
+    } catch (error) {
+      console.error("Failed to recording", error);
+    }
+  };
+
+  // stop recording block
+  const stopRecording = async () => {
+    console.log("saving recording...");
+    setRecording(undefined);
+    await recording.stopAndUnloadAsync();
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+    });
+    // update array and save audio 
+    const uri = recording.getURI();
+  setSavedAudios((prevAudios) => [...prevAudios, uri]); // Add new URI to the array
+  console.log("Recording saved: ", uri);
+};
+
 
   return (
     <View style={styles.container}>
@@ -46,7 +92,21 @@ const ChatComposer = () => {
               />
             </View>
           </View>
+          {/* RECORD AUDIO BUTTON */}
+          <TouchableOpacity
+            onPress={recording ? stopRecording : startRecording}
+            style={styles.sendBtn}
+          >
+            <Image
+              style={styles.icon}
+              source={recording ? {uri: "https://thenounproject.com/api/private/icons/5976667/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0"} :  {uri: "https://thenounproject.com/api/private/icons/5964043/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0",}}
+             
+              alt="record"
+            />
+          </TouchableOpacity>
 
+          {/* 
+          SEND MESSAGE BUTTON
           <TouchableOpacity
             onPress={() => setMessage("")}
             style={styles.sendBtn}
@@ -58,27 +118,31 @@ const ChatComposer = () => {
               }}
               alt="send"
             />
+          </TouchableOpacity> */}
 
-            {/* <Text style={styles.sendBtn}>Send</Text> */}
-          </TouchableOpacity>
-          {/* <Button title="Randomize Image" onPress={randomizeImage} /> */}
         </View>
       </View>
+      <View>
+  {savedAudios.map((audioUri, index) => (
+    <TouchableOpacity key={index} onPress={() => playAudio(audioUri)}>
+      <Text>Rec_ {index + 1}</Text>
+    </TouchableOpacity>
+  ))}
+</View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    // flex: 1,
+    // backgroundColor: "#fff",
     alignItems: "center",
-   
   },
   chatComposer: {
     height: "12%",
     width: "100%",
-    // backgroundColor: "#ff0099", 
+    // backgroundColor: "#ff0099",
     padding: 12,
   },
   textInput: {
@@ -137,6 +201,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     // paddingHorizontal: 0,
-  }
+  },
 });
 export default ChatComposer;

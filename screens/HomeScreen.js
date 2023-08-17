@@ -2,8 +2,9 @@ import React from "react";
 import { View, Text, StyleSheet, Image, TextInput } from "react-native";
 import ChatComposer from "../components/ChatComposer";
 import ChatMessage from "../components/ChatMessage";
+import ChatRecording from "../components/ChatRecording";
 
-const HomeScreen = () => {
+const HomeScreen = ({ recordedAudioUri }) => {
   return (
     <View style={styles.container}>
       <Text>HOME SCREEN TEST COMPONENTS</Text>
@@ -19,9 +20,9 @@ const HomeScreen = () => {
           />
         </View>
 
-       
         </View>
          {/* CHAT MESSAGE */}
+         <ChatRecording recordedAudioUri={recordedAudioUri} />
         <ChatComposer/>
         <ChatMessage/>
     </View>

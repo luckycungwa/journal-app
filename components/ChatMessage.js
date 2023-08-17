@@ -30,9 +30,10 @@ const ChatMessage = ({ content, timestamp }) => {
 const styles = StyleSheet.create({
   container: {
     // flex: 1,
-    backgroundColor: "#a0a0a0",
+    backgroundColor: "#efefef",
     alignItems: "center",
     flexDirection: "row",
+    
   },
 
   chatBubble: {
