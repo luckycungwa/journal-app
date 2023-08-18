@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,19 +10,48 @@ import {
 // expo audio from expo av
 import { Audio } from "expo-av";
 
+
 const ChatComposer = () => {
   const [messgae, setMessage] = useState();
   // Recording Stuff
   const [recording, setRecording] = useState();
   const [isRecording, setIsRecording] = useState(false); //initial recording state is off
-  const [recordedAudioUri, setRecordedAudioUri] = useState(null);   //save audio state as file
-// sav  y recording in an array
-  const [savedAudios, setSavedAudios] = useState([])
+  const [recordedAudioUri, setRecordedAudioUri] = useState(null); //save audio state as file
+  // sav  y recording in an array
+  const [savedAudios, setSavedAudios] = useState([]);
+
+  const [audioRec, setAudioRec] = useState();
+  const [isPlaying, setIsPlaying] = useState(false); //audio does not auto play
+  const [isPaused, setIsPaused] = useState(false); 
+
+  const doublePressThreshold = 200; // Milli sec delay detecting double-tap
+  let lastPress = 0;        //unpressed by deault
 
 
+
+  // Handle text sending
   const handleInputChange = () => {
     // handle sending user input
     console.log("message sent!");
+  };
+
+  // HANDLE AUDIO CONTROL
+  const handlePlayPause = async (audioUri) => {
+    const currentTime = new Date().getTime();
+    if (currentTime - lastPress <= doublePressThreshold) {
+      // Double tap within the threshold, stop audio
+      stopAudio();
+      console.log("audio stopped")
+    } else {
+      // Single tap, play/resume audio
+      if (!isPlaying) {
+        playAudio(audioUri);
+      } else {
+        pauseAudio();
+        console.log("audio paused")
+      }
+    }
+    lastPress = currentTime;
   };
 
   // Handle rcording audio
@@ -47,7 +76,7 @@ const ChatComposer = () => {
     }
   };
 
-  // stop recording block
+  //STOP recording block
   const stopRecording = async () => {
     console.log("saving recording...");
     setRecording(undefined);
@@ -55,15 +84,118 @@ const ChatComposer = () => {
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
     });
-    // update array and save audio 
+    // update array and save audio
     const uri = recording.getURI();
-  setSavedAudios((prevAudios) => [...prevAudios, uri]); // Add new URI to the array
-  console.log("Recording saved: ", uri);
-};
+    setSavedAudios((prevAudios) => [...prevAudios, uri]); // Add new URI to the array
+    console.log("Recording saved: ", uri);
+  };
 
+  // HANDLE AUDIO PLAYBACK
+
+  // const loadAudio = async () => {
+  //   console.log("Loading Sound");
+  //   const { sound } = await Audio.Sound.createAsync({ uri: recordedAudioUri });
+  //   setAudioRec(sound);
+  //       console.log("loaded audio is : " +recordedAudioUri)
+  // };
+  //   setAudioRec(sound);
+  //   console.log("Sound loaded");
+  // };
+
+    //AUDIO PLAYBACK BLOCK
+  const playAudio = async (audioUri) => {
+    try {
+      console.error("Fetching audio");
+      const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
+      await sound.playAsync();    //new audio
+      // setAudioRec(sound);
+    } catch (error) {
+      console.error("Audio play error:", error);
+    }
+  };
+
+  const pauseAudio = async () => {
+    if (audioRec) {
+      if (isPlaying) {
+        console.log("Pausing Audio");
+        await audioRec.pauseAsync();
+        setIsPaused(true);
+      } else if (isPaused) {
+        console.log("Resuming Audio");
+        await audioRec.playAsync();
+        setIsPaused(false);
+      }
+    }
+  };
+
+  const stopAudio = async () => {
+    if (audioRec) {
+      console.log("Stop Audio");
+      await audioRec.stopAsync();
+      setIsPlaying(false);
+      setIsPaused(false);
+    }
+  };
+
+  useEffect(() => {
+    if (recordedAudioUri) {
+      loadAudio();
+    }
+    return () => {
+      if (audioRec) {
+        console.log("Unloading Sound");
+        audioRec.unloadAsync();
+      }
+    };
+  }, [recordedAudioUri]);
+  
 
   return (
     <View style={styles.container}>
+     {/* AUDIO PLAYER SECTION */}
+     <View style={styles.audioSection}>
+        {savedAudios.map((audioUri, index) => (
+          <View style={styles.chatBubble} key={index}>
+            <View style={styles.audioContainer}>
+              <TouchableOpacity
+                style={styles.audioBtn}
+                key={index}
+                // onPress={() => playAudio(audioUri)}
+                onPress={() => handlePlayPause(audioUri)}
+                // onPress={isPlaying || isPaused ? pauseAudio : playAudio}
+              >
+                <Image
+                  style={styles.icon}
+                  source={
+                    isPlaying
+                      ? {
+                          uri: "https://thenounproject.com/api/private/icons/5978415/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0https://thenounproject.com/api/private/icons/5978415/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0",
+                        }
+                      : {
+                          uri: "https://thenounproject.com/api/private/icons/1785120/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0",
+                        }
+                  }
+                  alt="play"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={stopAudio(audioUri)}>
+        <Image
+          source={{
+            uri: "https://thenounproject.com/api/private/icons/1234567/stop/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0",
+          }}
+          alt="stop"
+        />
+      </TouchableOpacity>
+
+              <View>
+                <Text>Rec_ {index + 1}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+
       <View style={styles.chatComposer}>
         <View style={styles.inputContainer}>
           <View style={styles.iconContainer}>
@@ -99,8 +231,15 @@ const ChatComposer = () => {
           >
             <Image
               style={styles.icon}
-              source={recording ? {uri: "https://thenounproject.com/api/private/icons/5976667/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0"} :  {uri: "https://thenounproject.com/api/private/icons/5964043/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0",}}
-             
+              source={
+                recording
+                  ? {
+                      uri: "https://thenounproject.com/api/private/icons/5976667/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0",
+                    }
+                  : {
+                      uri: "https://thenounproject.com/api/private/icons/5964043/edit/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23000000&foregroundOpacity=1&imageFormat=png&rotation=0",
+                    }
+              }
               alt="record"
             />
           </TouchableOpacity>
@@ -119,16 +258,10 @@ const ChatComposer = () => {
               alt="send"
             />
           </TouchableOpacity> */}
-
         </View>
       </View>
-      <View>
-  {savedAudios.map((audioUri, index) => (
-    <TouchableOpacity key={index} onPress={() => playAudio(audioUri)}>
-      <Text>Rec_ {index + 1}</Text>
-    </TouchableOpacity>
-  ))}
-</View>
+
+     
     </View>
   );
 };
@@ -138,6 +271,7 @@ const styles = StyleSheet.create({
     // flex: 1,
     // backgroundColor: "#fff",
     alignItems: "center",
+    
   },
   chatComposer: {
     height: "12%",
@@ -201,6 +335,70 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     // paddingHorizontal: 0,
+  },
+
+  // Audio stuff
+  audioSection: {
+    width: "100%",
+    backgroundColor: "#fff",
+    marginVertical: 4,
+    gap:6,
+  },
+  chatBubble: {
+    alignSelf: "right",
+    left: 100,
+    height: "auto",
+    width: "64%",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: "#ab98ff",
+
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 0,
+  },
+  audioBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ff526f",
+    borderRadius: 25,
+    marginHorizontal: 8,
+    paddingLeft: 4,
+    left: -18,
+  },
+  icon: {
+    alignItems: "left",
+    justifyContent: "left",
+    width: 28,
+    height: 28,
+  },
+  audioWave: {
+    height: "20%",
+    width: 140,
+    left: -16,
+    backgroundColor: "#e7e7e7",
+    borderRadius: 25,
+  },
+  audioContainer: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  subText: {
+    fontSize: 12,
+    fontWeight: 100,
+    letterSpacing: 0.5,
+    top: 8,
+    // left: 200,
+    right: -100,
+  },
+  timeContainer: {
+    right: 4,
+    // backgroundColor: "red",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 export default ChatComposer;

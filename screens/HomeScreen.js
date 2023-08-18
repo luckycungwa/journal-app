@@ -4,12 +4,12 @@ import ChatComposer from "../components/ChatComposer";
 import ChatMessage from "../components/ChatMessage";
 import ChatRecording from "../components/ChatRecording";
 
-const HomeScreen = ({ recordedAudioUri }) => {
+const HomeScreen = ({ recordedAudioUri , playAudio, stopAudio, pauseAudio}) => {
   return (
     <View style={styles.container}>
       <Text>HOME SCREEN TEST COMPONENTS</Text>
       <View>
-      {/* HOMESCREEN STUF */}
+        {/* HOMESCREEN STUF */}
         <View style={styles.avatarImg}>
           <Image
             style={styles.avatar}
@@ -19,12 +19,15 @@ const HomeScreen = ({ recordedAudioUri }) => {
             alt="avatar"
           />
         </View>
-
-        </View>
-         {/* CHAT MESSAGE */}
-         <ChatRecording recordedAudioUri={recordedAudioUri} />
-        <ChatComposer/>
-        <ChatMessage/>
+      </View>
+      {/* CHAT MESSAGE */}
+      {/* <ChatRecording recordedAudioUri={recordedAudioUri} /> */}
+      <ChatComposer
+        playAudio={playAudio}
+        pauseAudio={pauseAudio}
+        stopAudio={stopAudio}
+      />
+      <ChatMessage />
     </View>
   );
 };
