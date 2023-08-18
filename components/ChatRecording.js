@@ -7,11 +7,16 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+
+// audio management stuff
 import { Audio } from "expo-av";
 
-const ChatRecording = ({ recordedAudioUri }) => {
+
+
+const ChatRecording = ({ recordedAudioUri}) => {
   const [audioRec, setAudioRec] = useState();
   const [isPlaying, setIsPlaying] = useState(false); //audio does not auto play
+  const [isPaused, setIsPaused] = useState(false);    
 
 
   useEffect(() => {
@@ -74,7 +79,7 @@ const ChatRecording = ({ recordedAudioUri }) => {
           <TouchableOpacity
             style={styles.audioBtn}
             //   title="Play"
-            onPress={playAudio}
+            onPress={() => playAudio(recordedAudioUri)}
           >
             <Image
               style={styles.icon}
