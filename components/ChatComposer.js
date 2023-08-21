@@ -10,7 +10,6 @@ import {
 // expo audio from expo av
 import { Audio } from "expo-av";
 
-
 const ChatComposer = () => {
   const [messgae, setMessage] = useState();
   // Recording Stuff
@@ -22,12 +21,7 @@ const ChatComposer = () => {
 
   const [audioRec, setAudioRec] = useState();
   const [isPlaying, setIsPlaying] = useState(false); //audio does not auto play
-  const [isPaused, setIsPaused] = useState(false); 
-
-  const doublePressThreshold = 200; // Milli sec delay detecting double-tap
-  let lastPress = 0;        //unpressed by deault
-
-
+  const [isPaused, setIsPaused] = useState(false);
 
   // Handle text sending
   const handleInputChange = () => {
@@ -37,22 +31,16 @@ const ChatComposer = () => {
 
   // HANDLE AUDIO CONTROL
   const handlePlayPause = async (audioUri) => {
-    const currentTime = new Date().getTime();
-    if (currentTime - lastPress <= doublePressThreshold) {
-      // Double tap within the threshold, stop audio
-      stopAudio();
-      console.log("audio stopped")
+    if (isPlaying) {
+      console.log("Pausing audio");
+      pauseAudio();
     } else {
-      // Single tap, play/resume audio
-      if (!isPlaying) {
-        playAudio(audioUri);
-      } else {
-        pauseAudio();
-        console.log("audio paused")
-      }
+      console.log("Playing audio");
+      playAudio(audioUri);
     }
-    lastPress = currentTime;
   };
+  
+  
 
   // Handle rcording audio
   const startRecording = async () => {
@@ -69,8 +57,12 @@ const ChatComposer = () => {
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
+
       setRecording(recording);
+      setIsRecording(true);
       console.log("Is recording");
+
+      // manage new audio for array saves
     } catch (error) {
       console.error("Failed to recording", error);
     }
@@ -102,38 +94,47 @@ const ChatComposer = () => {
   //   console.log("Sound loaded");
   // };
 
-    //AUDIO PLAYBACK BLOCK
+  //AUDIO PLAYBACK BLOCK
   const playAudio = async (audioUri) => {
     try {
-      console.error("Fetching audio");
+      console.log("Fetching audio");
+      // Stop any previously playing audio
+      await stopAudio();
+      // Prepare & load audio from recorded source
       const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
-      await sound.playAsync();    //new audio
-      // setAudioRec(sound);
+      setAudioRec(sound); // Store the loaded sound in state
+      await sound.playAsync();
+      setIsPlaying(true);
+      setIsPaused(false);
     } catch (error) {
       console.error("Audio play error:", error);
     }
   };
-
+  
   const pauseAudio = async () => {
     if (audioRec) {
       if (isPlaying) {
         console.log("Pausing Audio");
         await audioRec.pauseAsync();
-        setIsPaused(true);
-      } else if (isPaused) {
+        setIsPlaying(false);
+      } else {
         console.log("Resuming Audio");
         await audioRec.playAsync();
-        setIsPaused(false);
+        setIsPlaying(true);
       }
     }
   };
+  
 
-  const stopAudio = async () => {
+  const stopAudio = async (audioUri) => {
     if (audioRec) {
-      console.log("Stop Audio");
-      await audioRec.stopAsync();
-      setIsPlaying(false);
-      setIsPaused(false);
+      if (isPlaying) {
+        console.log("Stop Audio");
+        await audioRec.stopAsync();
+
+        setIsPlaying(false);
+        setIsPaused(false);
+      }
     }
   };
 
@@ -148,12 +149,11 @@ const ChatComposer = () => {
       }
     };
   }, [recordedAudioUri]);
-  
 
   return (
     <View style={styles.container}>
-     {/* AUDIO PLAYER SECTION */}
-     <View style={styles.audioSection}>
+      {/* AUDIO PLAYER SECTION */}
+      <View style={styles.audioSection}>
         {savedAudios.map((audioUri, index) => (
           <View style={styles.chatBubble} key={index}>
             <View style={styles.audioContainer}>
@@ -179,14 +179,14 @@ const ChatComposer = () => {
                 />
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={stopAudio(audioUri)}>
-        <Image
-          source={{
-            uri: "https://thenounproject.com/api/private/icons/1234567/stop/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0",
-          }}
-          alt="stop"
-        />
-      </TouchableOpacity>
+              {/* <TouchableOpacity onPress={stopAudio(audioUri)}>
+                <Image
+                  source={{
+                    uri: "https://thenounproject.com/api/private/icons/1234567/stop/?backgroundShape=SQUARE&backgroundShapeColor=%23000000&backgroundShapeOpacity=0&exportSize=752&flipX=false&flipY=false&foregroundColor=%23ffffff&foregroundOpacity=1&imageFormat=png&rotation=0",
+                  }}
+                  alt="stop"
+                />
+              </TouchableOpacity> */}
 
               <View>
                 <Text>Rec_ {index + 1}</Text>
@@ -260,8 +260,6 @@ const ChatComposer = () => {
           </TouchableOpacity> */}
         </View>
       </View>
-
-     
     </View>
   );
 };
@@ -271,7 +269,6 @@ const styles = StyleSheet.create({
     // flex: 1,
     // backgroundColor: "#fff",
     alignItems: "center",
-    
   },
   chatComposer: {
     height: "12%",
@@ -342,7 +339,7 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#fff",
     marginVertical: 4,
-    gap:6,
+    gap: 6,
   },
   chatBubble: {
     alignSelf: "right",
